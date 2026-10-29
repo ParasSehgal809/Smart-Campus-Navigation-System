@@ -1,0 +1,16 @@
+Student ID,Student Name,Start Location,Destination,Preference,Distance (m),Walk Time (min),Accessible,Path Route
+CS101,Aarav Sharma,HOSTEL_N,LECTURE_A,shortest,160,2.0,Yes,HOSTEL_N -> LECTURE_A
+CS102,Bhavna Patel,HOSTEL_S,CS_BLOCK,shortest,160,2.0,Yes,HOSTEL_S -> CS_BLOCK
+CS103,Chetan Verma,GATE,TURING_LAB,shortest,350,4.8,No,GATE -> ADMIN -> CS_BLOCK -> TURING_LAB
+CS104,Divya Nair,GATE,TURING_LAB,accessible,550,6.9,Yes,GATE -> ADMIN -> LIB -> TURING_LAB
+EC105,Eshan Gupta,HOSTEL_N,ECE_BLOCK,shortest,500,6.2,Yes,HOSTEL_N -> LECTURE_A -> LECTURE_B -> ECE_BLOCK
+EC106,Farhan Ali,GATE,IOT_LAB,shortest,750,9.7,Yes,GATE -> ADMIN -> LECTURE_A -> LECTURE_B -> ECE_BLOCK -> IOT_LAB
+ME107,Gaurav Joshi,HOSTEL_N,MECH_BLOCK,shortest,660,8.3,Yes,HOSTEL_N -> LECTURE_A -> LIB -> CAFETERIA -> MECH_BLOCK
+ME108,Hina Kaushik,HOSTEL_S,MECH_BLOCK,shortest,500,6.2,Yes,HOSTEL_S -> CS_BLOCK -> MECH_BLOCK
+BT109,Ishaan Roy,GATE,LECTURE_B,covered,490,6.4,Yes,GATE -> ADMIN -> LIB -> LECTURE_B
+CS110,Jaya Sen,HOSTEL_S,LIB,shortest,320,4.0,Yes,HOSTEL_S -> CS_BLOCK -> LIB
+CS111,Karan Mehra,GATE,ADMIN,shortest,120,1.5,Yes,GATE -> ADMIN
+EC112,Lavanya Rao,HOSTEL_N,LECTURE_A,shortest,160,2.0,Yes,HOSTEL_N -> LECTURE_A
+ME113,Manish Yadav,HOSTEL_S,LECTURE_B,shortest,490,6.4,Yes,HOSTEL_S -> CS_BLOCK -> LIB -> LECTURE_B
+CS114,Neha Kapoor,GATE,CS_BLOCK,shortest,310,3.9,Yes,GATE -> ADMIN -> CS_BLOCK
+CS115,Omkar Dixit,HOSTEL_N,TURING_LAB,accessible,550,6.9,Yes,HOSTEL_N -> LECTURE_A -> LIB -> TURING_LAB

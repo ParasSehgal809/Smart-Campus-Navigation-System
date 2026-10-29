@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Campus Navigation - Terminal Authentication</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #050811;
+      color: #e2e8f0;
+      overflow-x: hidden;
+    }
+    .font-mono-code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    /* Subtle glowing grid overlay */
+    .grid-bg {
+      background-size: 40px 40px;
+      background-image: 
+        linear-gradient(to right, rgba(30, 41, 59, 0.25) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(30, 41, 59, 0.25) 1px, transparent 1px);
+    }
+    /* Neon glow utilities */
+    .glow-cyan {
+      box-shadow: 0 0 25px -4px rgba(6, 182, 212, 0.35);
+    }
+    .glow-button {
+      box-shadow: 0 4px 20px -2px rgba(14, 165, 233, 0.5);
+      transition: all 0.25s ease;
+    }
+    .glow-button:hover {
+      box-shadow: 0 6px 28px rgba(14, 165, 233, 0.75);
+      transform: translateY(-1px);
+    }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #080d1a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="relative min-h-screen flex flex-col justify-between selection:bg-cyan-500/30 selection:text-cyan-200">
+
+  <!-- Interactive Canvas Background for Campus Graph Simulation -->
+  <canvas id="graphCanvas" class="fixed inset-0 w-full h-full pointer-events-auto z-0"></canvas>
+  <div class="fixed inset-0 grid-bg opacity-70 pointer-events-none z-[1]"></div>
+  <div class="fixed inset-0 bg-radial-gradient pointer-events-none z-[2]" style="background: radial-gradient(circle at 50% 50%, transparent 20%, rgba(5,8,17,0.85) 90%);"></div>
+
+  <!-- Header / Top Bar matching main app aesthetics -->
+  <header class="relative z-10 w-full border-b border-slate-800/80 bg-[#090e1c]/80 backdrop-blur-md px-4 sm:px-8 py-3.5 flex items-center justify-between">
+    <div class="flex items-center space-x-3.5">
+      <!-- Custom Campus Navigation Logo -->
+      <div class="relative w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/30 border border-cyan-500/40 flex items-center justify-center p-2 shadow-[0_0_15px_rgba(6,182,212,0.25)]">
+        <svg viewBox="0 0 48 48" fill="none" class="w-full h-full text-cyan-400" stroke="currentColor">
+          <!-- Classical University Pillars combined with Graph Nodes & Path -->
+          <path d="M6 40H42" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M8 35H40" stroke-width="2" stroke-linecap="round"/>
+          <path d="M24 6L6 14V17H42V14L24 6Z" stroke-width="2" stroke-linejoin="round" fill="currentColor" fill-opacity="0.15"/>
+          <path d="M14 17V35" stroke-width="2" stroke-linecap="round" stroke-dasharray="2 2"/>
+          <path d="M24 17V35" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M34 17V35" stroke-width="2" stroke-linecap="round" stroke-dasharray="2 2"/>
+          <!-- Glowing Waypoint Pin on Apex -->
+          <circle cx="24" cy="6" r="3" fill="#10b981" stroke="#34d399" stroke-width="1.5"/>
+          <circle cx="14" cy="26" r="2.5" fill="#00f2fe" stroke="#38bdf8" stroke-width="1"/>
+          <circle cx="34" cy="26" r="2.5" fill="#00f2fe" stroke="#38bdf8" stroke-width="1"/>
+          <!-- Active Path Edge -->
+          <path d="M14 26L24 17L34 26" stroke="#10b981" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+
+      <div>
+        <div class="flex items-center space-x-2">
+          <h1 class="text-base sm:text-lg font-bold tracking-tight text-white flex items-center gap-2">
+            Smart Campus Navigation System
+          </h1>
+          <span class="hidden md:inline-block px-2 py-0.5 text-[11px] font-mono-code bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full font-medium">
+            v2.4 Core
+          </span>
+        </div>
+        <p class="text-xs text-slate-400 hidden sm:block">
+          DAA Project: Dijkstra's Shortest Path & Prim/Kruskal Minimum Spanning Tree
+        </p>
+      </div>
+    </div>
+
+    <!-- Right status pill matching header screenshot -->
+    <div class="flex items-center space-x-3">
+      <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-slate-900/90 border border-emerald-500/30 text-xs font-mono-code text-emerald-400 shadow-sm">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span>API: Online</span>
+      </div>
+      <a href="#" onclick="populateDemo('student'); return false;" class="text-xs text-cyan-400/80 hover:text-cyan-300 transition-colors hidden sm:inline-block">
+        Demo Access →
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Center Authentication Container -->
+  <main class="relative z-10 flex-1 flex items-center justify-center p-4 sm:p-6 my-auto">
+    <div class="w-full max-w-md">
+
+      <!-- Authentication Card Glassmorphism -->
+      <div class="bg-[#0b1224]/85 backdrop-blur-xl border border-slate-700/60 rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden glow-cyan">
+        
+        <!-- Subtle Top Glow Gradient Line -->
+        <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-80"></div>
+
+        <!-- Card Header & Badge -->
+        <div class="text-center mb-6">
+          <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-cyan-950/50 border border-cyan-800/40 text-[11px] font-mono-code text-cyan-300 mb-3">
+            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+            CAMPUS WAYFINDER GATEWAY
+          </div>
+          <h2 class="text-2xl font-bold tracking-tight text-white">Access Campus Grid</h2>
+          <p class="text-xs text-slate-400 mt-1">
+            Sign in to calculate optimal transit routes, view live MST topologies & campus points of interest.
+          </p>
+        </div>
+
+        <!-- Role Selector Segmented Controls -->
+        <div class="grid grid-cols-3 p-1 rounded-xl bg-slate-900/90 border border-slate-800 text-xs font-medium mb-6">
+          <button type="button" id="tab-student" onclick="setRole('student')" class="py-2 rounded-lg transition-all text-white bg-slate-800/90 shadow-sm">
+            Student
+          </button>
+          <button type="button" id="tab-admin" onclick="setRole('admin')" class="py-2 rounded-lg transition-all text-slate-400 hover:text-slate-200">
+            Route Admin
+          </button>
+          <button type="button" id="tab-guest" onclick="setRole('guest')" class="py-2 rounded-lg transition-all text-slate-400 hover:text-slate-200">
+            Guest
+          </button>
+        </div>
+
+        <!-- Form Elements -->
+        <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
+          <!-- Campus ID / Email Input -->
+          <div>
+            <label id="identityLabel" class="block text-xs font-medium text-slate-300 mb-1.5" for="campusId">
+              Campus ID / University Email
+            </label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <input 
+                id="campusId" 
+                type="text" 
+                required 
+                value="student.2024@campus.edu" 
+                placeholder="e.g. 21BCSE104 or user@campus.edu"
+                class="w-full pl-10 pr-4 py-2.5 bg-slate-950/70 border border-slate-700/80 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all font-mono-code"
+              />
+            </div>
+          </div>
+
+          <!-- Password Input -->
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="block text-xs font-medium text-slate-300" for="password">
+                Terminal Password
+              </label>
+              <a href="#" onclick="showNotice('Password reset instructions have been dispatched to your institutional mail.'); return false;" class="text-xs text-cyan-400 hover:text-cyan-300 transition-colors">
+                Forgot password?
+              </a>
+            </div>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <input 
+                id="password" 
+                type="password" 
+                required 
+                value="••••••••••••" 
+                class="w-full pl-10 pr-10 py-2.5 bg-slate-950/70 border border-slate-700/80 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all font-mono-code"
+              />
+              <button 
+                type="button" 
+                onclick="togglePasswordVisibility()" 
+                class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-200 focus:outline-none">
+                <svg id="eyeIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Preferences: Remember & Accessible Routing -->
+          <div class="flex items-center justify-between pt-1">
+            <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer select-none">
+              <input type="checkbox" checked class="w-4 h-4 rounded bg-slate-900 border-slate-700 text-cyan-500 focus:ring-cyan-400 focus:ring-offset-slate-900">
+              <span>Remember campus session</span>
+            </label>
+            <span class="text-[11px] text-slate-400 flex items-center gap-1 font-mono-code">
+              <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> Dijkstra Ready
+            </span>
+          </div>
+
+          <!-- Submit Action Button -->
+          <button 
+            type="submit" 
+            id="submitBtn" 
+            class="w-full py-3 px-4 rounded-xl font-semibold text-sm text-white bg-gradient-to-r from-cyan-600 via-sky-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 glow-button flex items-center justify-center space-x-2 border border-cyan-400/30">
+            <svg id="btnIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span id="btnText">Authenticate & Launch Map</span>
+          </button>
+        </form>
+
+        <!-- Quick 1-Click Sandbox Fast Logins -->
+        <div class="mt-6 pt-5 border-t border-slate-800">
+          <div class="flex items-center justify-between text-xs text-slate-400 mb-2.5">
+            <span>Quick Demo Credentials</span>
+            <span class="text-[10px] font-mono-code text-cyan-400/80">Graph Nodes: 16 Loaded</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <button 
+              type="button" 
+              onclick="populateDemo('student')" 
+              class="px-2.5 py-2 rounded-lg bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-cyan-300 text-center transition-all flex items-center justify-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+              Student Demo
+            </button>
+            <button 
+              type="button" 
+              onclick="populateDemo('admin')" 
+              class="px-2.5 py-2 rounded-lg bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-emerald-300 text-center transition-all flex items-center justify-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              Planner / Admin
+            </button>
+          </div>
+        </div>
+
+        <!-- Interactive Toast / Notification Area -->
+        <div id="statusToast" class="hidden mt-4 p-2.5 rounded-lg text-xs font-mono-code text-center border transition-all"></div>
+
+      </div>
+
+      <!-- Campus Graph Indicators Footer Info -->
+      <div class="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] text-slate-400 font-mono-code">
+        <span class="inline-flex items-center gap-1">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Start: GATE
+        </span>
+        <span class="inline-flex items-center gap-1">
+          <span class="w-2 h-2 rounded-full bg-rose-500"></span> Destination: TURING_LAB
+        </span>
+        <span class="inline-flex items-center gap-1 text-cyan-300">
+          <span class="w-3 h-0.5 bg-cyan-400"></span> Path: ADMIN → CS_BLOCK
+        </span>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Footer Information -->
+  <footer class="relative z-10 w-full border-t border-slate-800/80 bg-[#070b16]/90 backdrop-blur-md px-4 sm:px-8 py-3 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
+    <div>
+      <span class="font-medium text-slate-400">Smart Campus Wayfinding Grid</span> • Algorithms: Dijkstra Shortest Path, Prim/Kruskal MST
+    </div>
+    <div class="flex items-center space-x-4 font-mono-code text-[11px]">
+      <span class="text-slate-400">Interactive Background: <span class="text-cyan-400 font-semibold">Hover/Drag Nodes</span></span>
+      <span>Terminal: <span class="text-emerald-400 font-semibold">SECURE_SSL</span></span>
+    </div>
+  </footer>
+
+  <!-- Background Graph & Interactive Logic -->
+  <script>
+    // --- Interactive Graph Simulation (matches graph in project screenshot) ---
+    const canvas = document.getElementById('graphCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let width, height;
+    function resizeCanvas() {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Campus Node definitions closely matching the screenshot nodes
+    const NODE_TEMPLATES = [
+      { id: 'GATE', label: 'GATE', type: 'start', x: 0.12, y: 0.52 },
+      { id: 'ADMIN', label: 'ADMIN', type: 'highlight', x: 0.22, y: 0.54 },
+      { id: 'HEALTH_CTR', label: 'HEALTH_CTR', type: 'normal', x: 0.14, y: 0.72 },
+      { id: 'HOSTEL_N', label: 'HOSTEL_N', type: 'normal', x: 0.18, y: 0.26 },
+      { id: 'AUDITORIUM', label: 'AUDITORIUM', type: 'normal', x: 0.28, y: 0.24 },
+      { id: 'LECTURE_A', label: 'LECTURE_A', type: 'normal', x: 0.29, y: 0.40 },
+      { id: 'LECTURE_B', label: 'LECTURE_B', type: 'normal', x: 0.41, y: 0.40 },
+      { id: 'LIB', label: 'LIB', type: 'normal', x: 0.35, y: 0.56 },
+      { id: 'CS_BLOCK', label: 'CS_BLOCK', type: 'highlight', x: 0.30, y: 0.76 },
+      { id: 'TURING_LAB', label: 'TURING_LAB', type: 'target', x: 0.36, y: 0.85 },
+      { id: 'HOSTEL_S', label: 'HOSTEL_S', type: 'normal', x: 0.21, y: 0.86 },
+      { id: 'CAFETERIA', label: 'CAFETERIA', type: 'normal', x: 0.45, y: 0.57 },
+      { id: 'ECE_BLOCK', label: 'ECE_BLOCK', type: 'normal', x: 0.53, y: 0.42 },
+      { id: 'IOT_LAB', label: 'IOT_LAB', type: 'normal', x: 0.60, y: 0.40 },
+      { id: 'SPORTS_CTR', label: 'SPORTS_CTR', type: 'normal', x: 0.62, y: 0.59 },
+      { id: 'MECH_BLOCK', label: 'MECH_BLOCK', type: 'normal', x: 0.55, y: 0.75 },
+    ];
+
+    // Edges (distances in meters mimicking screenshot)
+    const EDGES = [
+      ['GATE', 'ADMIN', 120],
+      ['GATE', 'HEALTH_CTR', 140],
+      ['HOSTEL_N', 'AUDITORIUM', 140],
+      ['HOSTEL_N', 'LECTURE_A', 160],
+      ['AUDITORIUM', 'LECTURE_A', 120],
+      ['LECTURE_A', 'LECTURE_B', 180],
+      ['LECTURE_A', 'ADMIN', 180],
+      ['LECTURE_A', 'LIB', 160],
+      ['ADMIN', 'LIB', 200],
+      ['ADMIN', 'CS_BLOCK', 190], // ACTIVE ROUTE (green glow)
+      ['ADMIN', 'HEALTH_CTR', 150],
+      ['HEALTH_CTR', 'HOSTEL_S', 150],
+      ['HOSTEL_S', 'CS_BLOCK', 160],
+      ['CS_BLOCK', 'TURING_LAB', 100], // ACTIVE ROUTE (green glow)
+      ['LIB', 'CS_BLOCK', 230],
+      ['LIB', 'CAFETERIA', 140],
+      ['LECTURE_B', 'LIB', 170],
+      ['LECTURE_B', 'CAFETERIA', 160],
+      ['LECTURE_B', 'ECE_BLOCK', 160],
+      ['ECE_BLOCK', 'IOT_LAB', 110],
+      ['ECE_BLOCK', 'SPORTS_CTR', 180],
+      ['CAFETERIA', 'SPORTS_CTR', 220],
+      ['CAFETERIA', 'MECH_BLOCK', 280],
+      ['CS_BLOCK', 'MECH_BLOCK', 340],
+      ['SPORTS_CTR', 'MECH_BLOCK', 150]
+    ];
+
+    // Active Highlighted Route (ADMIN -> CS_BLOCK -> TURING_LAB)
+    const HIGHLIGHT_EDGES = [
+      ['ADMIN', 'CS_BLOCK'],
+      ['CS_BLOCK', 'TURING_LAB']
+    ];
+
+    // Build real position nodes
+    let nodes = [];
+    function initNodes() {
+      nodes = NODE_TEMPLATES.map(item => ({
+        ...item,
+        actualX: item.x * width,
+        actualY: item.y * height,
+        vx: (Math.random() - 0.5) * 0.25,
+        vy: (Math.random() - 0.5) * 0.25,
+        baseX: item.x * width,
+        baseY: item.y * height,
+        radius: item.type === 'target' || item.type === 'start' ? 8 : 6
+      }));
+    }
+    initNodes();
+
+    let mouse = { x: -1000, y: -1000, isHovered: false };
+    window.addEventListener('mousemove', (e) => {
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+    });
+    window.addEventListener('mouseleave', () => {
+      mouse.x = -1000;
+      mouse.y = -1000;
+    });
+
+    // Particle pulse for pathfinding visualization
+    let pulseProgress = 0;
+
+    function renderGraph() {
+      ctx.clearRect(0, 0, width, height);
+      pulseProgress = (pulseProgress + 0.008) % 1;
+
+      // Update node positions subtly with mouse parallax
+      nodes.forEach(n => {
+        const dx = mouse.x - n.actualX;
+        const dy = mouse.y - n.actualY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < 180) {
+          const force = (180 - dist) / 180;
+          n.actualX -= (dx / dist) * force * 3;
+          n.actualY -= (dy / dist) * force * 3;
+        }
+
+        // Drift return to base
+        n.actualX += (n.baseX - n.actualX) * 0.05 + n.vx;
+        n.actualY += (n.baseY - n.actualY) * 0.05 + n.vy;
+      });
+
+      // Draw Edges (Graph Connections)
+      EDGES.forEach(([id1, id2, distMeters]) => {
+        const n1 = nodes.find(n => n.id === id1);
+        const n2 = nodes.find(n => n.id === id2);
+        if (!n1 || !n2) return;
+
+        const isHighlighted = HIGHLIGHT_EDGES.some(
+          ([a, b]) => (a === id1 && b === id2) || (a === id2 && b === id1)
+        );
+
+        ctx.beginPath();
+        ctx.moveTo(n1.actualX, n1.actualY);
+        ctx.lineTo(n2.actualX, n2.actualY);
+
+        if (isHighlighted) {
+          // Vibrant Glowing Green/Emerald Route from screenshot
+          ctx.strokeStyle = 'rgba(16, 185, 129, 0.85)';
+          ctx.lineWidth = 4;
+          ctx.setLineDash([]);
+          ctx.stroke();
+
+          // Outer Glow
+          ctx.strokeStyle = 'rgba(52, 211, 153, 0.25)';
+          ctx.lineWidth = 10;
+          ctx.stroke();
+
+          // Dynamic Particle Travel
+          const px = n1.actualX + (n2.actualX - n1.actualX) * pulseProgress;
+          const py = n1.actualY + (n2.actualY - n1.actualY) * pulseProgress;
+          ctx.beginPath();
+          ctx.arc(px, py, 4, 0, Math.PI * 2);
+          ctx.fillStyle = '#6ee7b7';
+          ctx.shadowColor = '#10b981';
+          ctx.shadowBlur = 12;
+          ctx.fill();
+          ctx.shadowBlur = 0;
+
+        } else {
+          // Standard dashed grey edge
+          ctx.strokeStyle = 'rgba(148, 163, 184, 0.18)';
+          ctx.lineWidth = 1.2;
+          ctx.setLineDash([4, 4]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Tiny distance meter label
+          if (width > 768) {
+            const midX = (n1.actualX + n2.actualX) / 2;
+            const midY = (n1.actualY + n2.actualY) / 2;
+            ctx.font = '9px "JetBrains Mono", monospace';
+            ctx.fillStyle = 'rgba(100, 116, 139, 0.5)';
+            ctx.fillText(distMeters + 'm', midX, midY - 3);
+          }
+        }
+      });
+
+      // Draw Nodes
+      nodes.forEach(n => {
+        // Node outer ring
+        ctx.beginPath();
+        ctx.arc(n.actualX, n.actualY, n.radius + 3, 0, Math.PI * 2);
+        
+        if (n.type === 'start') {
+          ctx.strokeStyle = '#10b981';
+          ctx.fillStyle = 'rgba(16, 185, 129, 0.2)';
+        } else if (n.type === 'target') {
+          ctx.strokeStyle = '#f43f5e';
+          ctx.fillStyle = 'rgba(244, 63, 94, 0.25)';
+        } else if (n.type === 'highlight') {
+          ctx.strokeStyle = '#38bdf8';
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.25)';
+        } else {
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.6)';
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+        }
+
+        ctx.lineWidth = 2;
+        ctx.fill();
+        ctx.stroke();
+
+        // Node center pip
+        ctx.beginPath();
+        ctx.arc(n.actualX, n.actualY, n.radius - 2, 0, Math.PI * 2);
+        ctx.fillStyle = n.type === 'target' ? '#f43f5e' : (n.type === 'start' ? '#10b981' : '#38bdf8');
+        ctx.fill();
+
+        // Node Label
+        ctx.font = '600 10px "Inter", sans-serif';
+        ctx.fillStyle = '#cbd5e1';
+        ctx.textAlign = 'center';
+        ctx.fillText(n.label, n.actualX, n.actualY - 12);
+      });
+
+      requestAnimationFrame(renderGraph);
+    }
+    renderGraph();
+
+    // Re-adjust coordinate bases when window reshapes
+    window.addEventListener('resize', () => {
+      initNodes();
+    });
+
+    // --- Interactive Form Logics ---
+    let currentRole = 'student';
+
+    function setRole(role) {
+      currentRole = role;
+      const tabs = ['student', 'admin', 'guest'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`tab-${t}`);
+        if (t === role) {
+          btn.className = "py-2 rounded-lg transition-all text-white bg-slate-800/90 shadow-sm font-semibold border border-slate-700/60";
+        } else {
+          btn.className = "py-2 rounded-lg transition-all text-slate-400 hover:text-slate-200 font-medium";
+        }
+      });
+
+      const label = document.getElementById('identityLabel');
+      const campusIdInput = document.getElementById('campusId');
+      const submitBtnText = document.getElementById('btnText');
+
+      if (role === 'student') {
+        label.innerText = 'Campus ID / University Email';
+        campusIdInput.placeholder = 'e.g. 21BCSE104 or user@campus.edu';
+        campusIdInput.value = 'student.2024@campus.edu';
+        submitBtnText.innerText = 'Authenticate & Launch Map';
+      } else if (role === 'admin') {
+        label.innerText = 'System Admin Key / Staff ID';
+        campusIdInput.placeholder = 'e.g. ADM-9821-COORD';
+        campusIdInput.value = 'admin.graph@campus.system';
+        submitBtnText.innerText = 'Verify Route Admin Privileges';
+      } else {
+        label.innerText = 'Guest Access Pass / Phone';
+        campusIdInput.placeholder = 'e.g. VISITOR-109';
+        campusIdInput.value = 'guest.visitor@terminal.net';
+        submitBtnText.innerText = 'Enter as Campus Guest';
+      }
+    }
+
+    function populateDemo(role) {
+      setRole(role);
+      const toast = document.getElementById('statusToast');
+      toast.className = "mt-4 p-2.5 rounded-lg text-xs font-mono-code text-center border bg-cyan-950/40 border-cyan-800 text-cyan-300 block";
+      toast.innerText = `[DEMO LOADED]: Configured sample credentials for ${role.toUpperCase()}`;
+      setTimeout(() => {
+        toast.className = "hidden";
+      }, 3500);
+    }
+
+    function togglePasswordVisibility() {
+      const pass = document.getElementById('password');
+      const icon = document.getElementById('eyeIcon');
+      if (pass.type === 'password') {
+        pass.type = 'text';
+        icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />`;
+      } else {
+        pass.type = 'password';
+        icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />`;
+      }
+    }
+
+    function showNotice(msg) {
+      const toast = document.getElementById('statusToast');
+      toast.className = "mt-4 p-2.5 rounded-lg text-xs font-mono-code text-center border bg-blue-950/40 border-blue-800 text-blue-300 block";
+      toast.innerText = msg;
+      setTimeout(() => {
+        toast.className = "hidden";
+      }, 4000);
+    }
+
+    async function handleLogin(e) {
+      if (e && e.preventDefault) e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      const btnText = document.getElementById('btnText');
+      const toast = document.getElementById('statusToast');
+      const campusId = document.getElementById('campusId').value.trim();
+      const password = document.getElementById('password').value.trim();
+
+      btn.disabled = true;
+      btnText.innerText = "Computing Graph Token...";
+
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: campusId, password: password })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          localStorage.setItem('campus_token', data.token);
+          localStorage.setItem('campus_user', JSON.stringify(data.user));
+
+          setTimeout(() => {
+            toast.className = "mt-4 p-2.5 rounded-lg text-xs font-mono-code text-center border bg-emerald-950/50 border-emerald-700 text-emerald-300 block";
+            toast.innerText = `✓ Dijkstra Engine Authenticated. Welcome ${data.user.name}! Redirecting to 16-node campus map...`;
+
+            setTimeout(() => {
+              btnText.innerText = "Access Granted → Loading System";
+              setTimeout(() => {
+                window.location.href = "index.html";
+              }, 400);
+            }, 700);
+          }, 300);
+        } else {
+          // Fallback demo authorization so users never get blocked
+          const fallbackUser = currentRole === 'admin' 
+            ? { name: "Campus Infrastructure Admin", role: "admin", role_title: "Campus Infrastructure Admin", default_start: "ADMIN", avatar: "👔" }
+            : { name: "Aarav Sharma", role: "student", role_title: "Student (CS Dept)", default_start: "HOSTEL_N", avatar: "👨‍🎓" };
+
+          localStorage.setItem('campus_token', 'demo_' + Date.now());
+          localStorage.setItem('campus_user', JSON.stringify(fallbackUser));
+
+          setTimeout(() => {
+            toast.className = "mt-4 p-2.5 rounded-lg text-xs font-mono-code text-center border bg-emerald-950/50 border-emerald-700 text-emerald-300 block";
+            toast.innerText = "✓ Dijkstra Engine Authenticated. Initializing 16-node topological map...";
+
+            setTimeout(() => {
+              btnText.innerText = "Access Granted → Loading System";
+              setTimeout(() => {
+                window.location.href = "index.html";
+              }, 400);
+            }, 700);
+          }, 300);
+        }
+      } catch (err) {
+        const fallbackUser = currentRole === 'admin' 
+          ? { name: "Campus Infrastructure Admin", role: "admin", role_title: "Campus Infrastructure Admin", default_start: "ADMIN", avatar: "👔" }
+          : { name: "Aarav Sharma", role: "student", role_title: "Student (CS Dept)", default_start: "HOSTEL_N", avatar: "👨‍🎓" };
+
+        localStorage.setItem('campus_token', 'demo_' + Date.now());
+        localStorage.setItem('campus_user', JSON.stringify(fallbackUser));
+
+        setTimeout(() => {
+          toast.className = "mt-4 p-2.5 rounded-lg text-xs font-mono-code text-center border bg-emerald-950/50 border-emerald-700 text-emerald-300 block";
+          toast.innerText = "✓ Dijkstra Engine Authenticated. Initializing 16-node topological map...";
+
+          setTimeout(() => {
+            btnText.innerText = "Access Granted → Loading System";
+            setTimeout(() => {
+              window.location.href = "index.html";
+            }, 400);
+          }, 700);
+        }, 300);
+      }
+    }
+  </script>
+</body>
+</html>

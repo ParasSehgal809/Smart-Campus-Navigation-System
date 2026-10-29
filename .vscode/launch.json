@@ -1,0 +1,46 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "🌐 Start Campus Web Application (server.py)",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/server.py",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "👥 Run Batch Navigation Simulation (batch_navigator.py)",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/batch_navigator.py",
+      "args": ["--scenario", "all"],
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "▶ Run Campus Navigator CLI (Interactive)",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/main.py",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "▶ Run Automated Demo (demo.py)",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/demo.py",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "▶ Run Unit Tests (test_campus.py)",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/test_campus.py",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    }
+  ]
+}

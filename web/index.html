@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Campus Navigation & Infrastructure Planning</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="brand-icon">🏛️</div>
+        <div>
+          <h1>Smart Campus Navigation System</h1>
+          <p class="subtitle">DAA Project: Dijkstra's Shortest Path & Prim/Kruskal Minimum Spanning Tree</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="status-pill" id="apiStatusPill">
+          <span class="status-dot"></span>
+          <span id="apiStatusText">Connecting...</span>
+        </div>
+        <!-- User Authentication Profile Slot -->
+        <div id="userHeaderSlot">
+          <a href="login.html" class="btn-signin-link">
+            <span>🔑</span>
+            <span>Sign In</span>
+          </a>
+        </div>
+        <button class="btn btn-secondary" onclick="resetView()">Reset Map</button>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="app-main">
+      <!-- Left: Interactive SVG Map Canvas -->
+      <section class="map-section">
+        <div class="map-toolbar">
+          <div class="map-legend">
+            <span class="legend-item"><span class="dot dot-start"></span> Start</span>
+            <span class="legend-item"><span class="dot dot-end"></span> Destination</span>
+            <span class="legend-item"><span class="line line-route"></span> Shortest Route</span>
+            <span class="legend-item"><span class="line line-mst"></span> Fiber MST</span>
+            <span class="legend-item"><span class="line line-heat"></span> Congestion Heat</span>
+          </div>
+          <div class="map-controls">
+            <span class="hint-text">💡 Tip: Click any 2 buildings on the map to navigate</span>
+          </div>
+        </div>
+
+        <div class="svg-wrapper" id="svgWrapper">
+          <svg id="campusSvg" viewBox="0 0 940 700" preserveAspectRatio="xMidYMid meet">
+            <defs>
+              <pattern id="campusGrid" width="30" height="30" patternUnits="userSpaceOnUse">
+                <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+              </pattern>
+              <filter id="glow-green" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#10b981" flood-opacity="0.9"/>
+              </filter>
+              <filter id="glow-cyan" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#06b6d4" flood-opacity="0.9"/>
+              </filter>
+              <filter id="glow-orange" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#f97316" flood-opacity="0.9"/>
+              </filter>
+            </defs>
+
+            <rect width="100%" height="100%" fill="url(#campusGrid)" />
+
+            <!-- Map Layers -->
+            <g id="edgesLayer"></g>
+            <g id="edgeLabelsLayer"></g>
+            <g id="nodesLayer"></g>
+          </svg>
+
+          <!-- Hover Tooltip -->
+          <div id="mapTooltip" class="tooltip"></div>
+        </div>
+      </section>
+
+      <!-- Right: Interactive Control Panel & Tabs -->
+      <aside class="control-panel">
+        <!-- Tab Navigation Bar -->
+        <nav class="tabs-nav">
+          <button class="tab-btn active" data-tab="tab-navigate">🧭 Navigate</button>
+          <button class="tab-btn" data-tab="tab-compare">⚖️ Compare</button>
+          <button class="tab-btn" data-tab="tab-mst">🌐 MST Backbone</button>
+          <button class="tab-btn" data-tab="tab-batch">👥 Batch Traffic</button>
+          <button class="tab-btn" data-tab="tab-matrix">📚 DAA Matrix</button>
+        </nav>
+
+        <div class="tab-content-container">
+          <!-- TAB 1: NAVIGATION -->
+          <div class="tab-pane active" id="tab-navigate">
+            <div class="card">
+              <h3 class="card-title">📍 Path Planner</h3>
+              <div class="form-group">
+                <label for="startSelect">Start Location:</label>
+                <select id="startSelect" class="form-select"></select>
+              </div>
+              <div class="form-group">
+                <label for="endSelect">Destination Location:</label>
+                <select id="endSelect" class="form-select"></select>
+              </div>
+
+              <div class="form-group">
+                <label>Routing Preference:</label>
+                <div class="pill-selector">
+                  <label class="pill-radio">
+                    <input type="radio" name="routePref" value="shortest" checked>
+                    <span>⚡ Shortest</span>
+                  </label>
+                  <label class="pill-radio">
+                    <input type="radio" name="routePref" value="accessible">
+                    <span>♿ Accessible</span>
+                  </label>
+                  <label class="pill-radio">
+                    <input type="radio" name="routePref" value="covered">
+                    <span>☔ Covered</span>
+                  </label>
+                </div>
+              </div>
+
+              <button class="btn btn-primary btn-block" onclick="calculateRoute()">
+                Find Shortest Route (Dijkstra)
+              </button>
+            </div>
+
+            <!-- Route Metrics Box -->
+            <div class="card metrics-card" id="routeMetricsCard">
+              <h3 class="card-title">📊 Trip Metrics</h3>
+              <div class="stats-grid">
+                <div class="stat-card">
+                  <div class="stat-num" id="statDistance">--</div>
+                  <div class="stat-label">Total Distance</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-num" id="statTime">--</div>
+                  <div class="stat-label">Walk Time (@80m/m)</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-num" id="statCalories">--</div>
+                  <div class="stat-label">Calories Burned</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-num" id="statHops">--</div>
+                  <div class="stat-label">Building Hops</div>
+                </div>
+              </div>
+
+              <div class="accessibility-badge-container" id="routeBadges"></div>
+
+              <div class="directions-section">
+                <h4>Turn-by-Turn Directions</h4>
+                <div class="directions-scroll" id="directionsList">
+                  <div class="dir-step placeholder-step">Select locations to compute directions.</div>
+                </div>
+              </div>
+
+              <!-- Collapsible Trace -->
+              <details class="trace-details">
+                <summary>🔍 DAA Dijkstra Relaxation Trace</summary>
+                <div class="trace-box" id="dijkstraTraceBox"></div>
+              </details>
+            </div>
+          </div>
+
+          <!-- TAB 2: ROUTE COMPARISON -->
+          <div class="tab-pane" id="tab-compare">
+            <div class="card">
+              <h3 class="card-title">⚖️ Multi-Criteria Route Comparison</h3>
+              <p class="card-desc">Compare 4 distinct routes between the chosen Start and Destination to see trade-offs in distance, time, and accessibility.</p>
+              <button class="btn btn-accent btn-block" onclick="compareAllRoutes()">
+                Compare Routes Now
+              </button>
+            </div>
+
+            <div class="compare-results" id="compareCardsContainer">
+              <div class="placeholder-box">Click "Compare Routes Now" to evaluate tradeoffs.</div>
+            </div>
+          </div>
+
+          <!-- TAB 3: MINIMUM SPANNING TREE (MST) -->
+          <div class="tab-pane" id="tab-mst">
+            <div class="card">
+              <h3 class="card-title">🌐 Campus Backbone Network (MST)</h3>
+              <p class="card-desc">
+                Plan a campus-wide Fiber-Optic Broadband & Smart CCTV network connecting all 16 facilities with minimum total cabling distance and zero cyclic loops.
+              </p>
+              <div class="btn-group">
+                <button class="btn btn-primary" onclick="loadMst()">Highlight MST Backbone</button>
+                <button class="btn btn-secondary" onclick="clearMstOverlay()">Clear Overlay</button>
+              </div>
+            </div>
+
+            <div class="card" id="mstStatsCard">
+              <h3 class="card-title">📈 Infrastructure Cable Savings</h3>
+              <div class="stats-grid">
+                <div class="stat-card">
+                  <div class="stat-num text-cyan" id="mstLength">--</div>
+                  <div class="stat-label">Optimal MST Cable</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-num" id="fullLength">--</div>
+                  <div class="stat-label">Total Graph Cabling</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-num text-green" id="mstSavings">--</div>
+                  <div class="stat-label">Trenching Cost Saved</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-num" id="mstEdges">15 Links</div>
+                  <div class="stat-label">Edges (|V| - 1)</div>
+                </div>
+              </div>
+
+              <div class="mst-compare-row">
+                <span class="badge badge-success">Kruskal MST = Prim MST (Exact Match)</span>
+              </div>
+
+              <div class="mst-edges-list">
+                <h4>Included Spanning Tree Links:</h4>
+                <div class="links-scroll" id="mstLinksList"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 4: BATCH SIMULATION -->
+          <div class="tab-pane" id="tab-batch">
+            <div class="card">
+              <h3 class="card-title">👥 Batch Transit Simulation</h3>
+              <p class="card-desc">Simulate student cohort transitions and discover campus bottlenecks & pathway traffic congestion.</p>
+              <div class="form-group">
+                <label for="batchScenarioSelect">Choose Scenario:</label>
+                <select id="batchScenarioSelect" class="form-select">
+                  <option value="morning_rush">🌅 Morning Class Rush (08:45 AM - 15 Trips)</option>
+                  <option value="lunch_peak">🍔 Lunch Break Influx (12:30 PM - 10 Trips)</option>
+                  <option value="evening_recreation">🏃 Evening Recreation & Library (05:00 PM - 8 Trips)</option>
+                </select>
+              </div>
+              <button class="btn btn-primary btn-block" onclick="runBatchSimulation()">
+                Run Batch Simulation & Heatmap
+              </button>
+            </div>
+
+            <div class="card" id="batchResultsCard" style="display:none;">
+              <h3 class="card-title">🔥 Bottleneck & Traffic Analysis</h3>
+              <div class="stats-grid">
+                <div class="stat-card">
+                  <div class="stat-num text-orange" id="batchTotalTrips">--</div>
+                  <div class="stat-label">Students Processed</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-num" id="batchTotalKm">--</div>
+                  <div class="stat-label">Total Km Walked</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-num" id="batchAvgDist">--</div>
+                  <div class="stat-label">Avg Distance/Trip</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-num text-green" id="batchExecTime">--</div>
+                  <div class="stat-label">Algorithm Speed</div>
+                </div>
+              </div>
+
+              <div class="bottleneck-alert" id="bottleneckAlert">
+                🚨 <strong>Most Congested Pathway:</strong> <span id="bottleneckPath">--</span> (<span id="bottleneckCount">--</span> trips)
+              </div>
+
+              <h4>Traffic Volume Breakdown:</h4>
+              <div class="traffic-bars" id="trafficBarsContainer"></div>
+
+              <h4>Student Trip Log:</h4>
+              <div class="student-trips-scroll" id="studentTripsTable"></div>
+            </div>
+          </div>
+
+          <!-- TAB 5: DAA MATRIX -->
+          <div class="tab-pane" id="tab-matrix">
+            <div class="card">
+              <h3 class="card-title">📚 Graph Representation Inspector</h3>
+              <p class="card-desc">Inspect both the Adjacency List (O(V+E)) and Adjacency Matrix (O(V²)) representations used by the DAA algorithms.</p>
+              <button class="btn btn-secondary btn-block" onclick="loadMatrix()">Refresh Matrix Data</button>
+            </div>
+
+            <div class="card">
+              <h3 class="card-title">Adjacency Matrix (Sample Top 8)</h3>
+              <div class="matrix-table-wrapper" id="matrixContainer">
+                <div class="placeholder-box">Loading matrix...</div>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3 class="card-title">Adjacency List (Vertex Outgoing Degrees)</h3>
+              <div class="adj-list-scroll" id="adjListContainer"></div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

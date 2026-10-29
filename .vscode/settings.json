@@ -1,0 +1,8 @@
+{
+  "python.defaultInterpreterPath": "/Users/parassehgal/.local/bin/python3.15",
+  "python.terminal.activateEnvironment": true,
+  "terminal.integrated.cwd": "${workspaceFolder}",
+  "files.autoSave": "afterDelay",
+  "editor.tabSize": 4,
+  "editor.formatOnSave": true
+}
